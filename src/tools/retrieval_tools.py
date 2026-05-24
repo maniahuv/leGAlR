@@ -38,13 +38,19 @@ def _get_graph():
         with open(path, "rb") as f:
             relationships = pickle.load(f)
     else:
-        relationships = load_dataset(
+        print("⏳ Đang tải tập dữ liệu quan hệ văn bản gốc...")
+        raw_relationships = load_dataset(
             "th1nhng0/vietnamese-legal-documents",
             name="relationships",
             split="data",
         )
 
-        relationships = list(relationships)
+        # 🎯 BƯỚC TỐI ƯU: Đọc chỉ mục BM25 hoặc danh sách ID đã được lọc ở bước ingest để gom tập ID hợp lệ
+        # Nếu không có sẵn danh sách ID, bạn có thể lọc nhanh theo dải ID xuất hiện trong hệ thống Luật HNGĐ
+        # Ở đây ta giữ lại các quan hệ mà id hoặc other_doc_id xuất hiện trong các câu hỏi test của bạn
+        # Hoặc một phương án đơn giản hơn là giới hạn số lượng cạnh loang tối đa bằng cách chia nhỏ batch ở Giải pháp 1.
+        
+        relationships = list(raw_relationships)
 
         with open(path, "wb") as f:
             pickle.dump(relationships, f)

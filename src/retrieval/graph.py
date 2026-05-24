@@ -1,52 +1,90 @@
 import networkx as nx
 from langchain_core.documents import Document
 from src.retrieval.dense import dense_search
+from src.retrieval.hybrid import hybrid_search
 
-
-
-def build_graph(relationships: list[dict]) -> nx.DiGraph: #dict là dictionary dạng key-value giống json
-    graph=nx.DiGraph() # khởi tạo graph 
+def build_graph(relationships: list[dict]) -> nx.DiGraph:
+    """
+    Khởi tạo đồ thị có hướng biểu diễn mối quan hệ giữa các văn bản pháp luật.
+    """
+    graph = nx.DiGraph()
     for row in relationships:
-        src=str(row.get("doc_id", ""))
-        dst=str(row.get("other_doc_id", ""))
-        rel_type=row.get("relationship", "")
-        if src and dst: #nếu có vector giữa 2 node thì thêm vào graph quan hệ của cạnh
+        src = str(row.get("doc_id", ""))
+        dst = str(row.get("other_doc_id", ""))
+        rel_type = row.get("relationship", "")
+        if src and dst:
             graph.add_edge(src, dst, rel_type=rel_type)
     return graph
 
-def graph_search(store, graph: nx.DiGraph, query: str, k: int=5, initial_k:int=3, max_hops:int=2):
-    seed_docs=dense_search(store, query, k=initial_k) # tìm các docs đóng vai trò làm hạt nhân tìm kiếm bằng vector search 
-    seed_ids={d.metadata.get("doc_id", "") 
-              for d in seed_docs
-              if d.metadata.get("doc_id")} # lấy các ids dựa trên các docs đã tìm thấy ở trên, cấu trúc này là set comprehension -> trả về 1 set, nếu để () thì nó sẽ trả lần lượt mỗi phần tử 
+def graph_search(store, graph: nx.DiGraph, query: str, k: int = 5, initial_k: int = 3, max_hops: int = 2):
+    """
+    Thuật toán tìm kiếm nâng cao dẫn đường bằng Đồ thị quan hệ hiệu lực văn bản (Graph-guided RAG).
+    """
+    # Nới rộng không gian tìm kiếm thô để ngăn chặn hiện tượng nghẽn chunk
+    POOL_K = k * 5
+    
+    # 1. Gọi trực tiếp mô hình hybrid_search để lấy tài liệu hạt nhân chuẩn xác (Seed Docs)
+    # Để tránh bị ép chặt unique quá sớm, ta nạp đối tượng chỉ mục trực tiếp
+    from src.indexing.bm25_index import load_bm25_index
+    bm25 = load_bm25_index()
+    
+    seed_docs = hybrid_search(store, bm25, query, k=POOL_K)
+    seed_ids = {str(d.metadata.get("doc_id", "")) for d in seed_docs if d.metadata.get("doc_id")}
 
-    reachable, frontier = set(seed_ids), set(seed_ids) #reachable: các node đã biết, frontier: các node dùng để xét vòng tiếp theo
-    for _ in range(max_hops): 
-        nxt: set[str] =set() # tạo 1 biến nxt, kiểu set[str], ban đầu rỗng
-        for node in frontier: 
-            if node not in graph: # lần đầu có thể vector search ra các seed_ids sẽ có thể ra các node không nằm trong graph vì graph chỉ chứa các docs có relationship 
+    reachable, frontier = set(seed_ids), set(seed_ids)
+    
+    # 2. Thuật toán loang đồ thị tìm các văn bản sửa đổi, thay thế hoặc dẫn chiếu liên quan
+    for _ in range(max_hops):
+        nxt = set()
+        for node in frontier:
+            if node not in graph:
                 continue
-            nxt |={nb # union nxt |= nb = nxt hợp nb 
-                   for _, nb, _ in graph.out_edges(node, data=True) # cú pháp unpack tuple, chỉ lấy phần tử ở giữa
-                   if nb not in reachable} #set comprehension, thêm các node mới được truy xuất tới từ node hiện tại (tất nhiên là không nằm trong tập reachable đã biết)
-            nxt |={nb # union nxt |= = nxt hợp nb 
-                   for nb, _, _ in graph.in_edges(node, data=True) # cú pháp unpack tuple, chỉ lấy phần tử ở giữa 
-                   if nb not in reachable} #set comprehension, thêm các node mới được truy xuất tới node hiện tại 
-        reachable |= nxt # reachable = reachable hợp nxt (next)
-        frontier = nxt #nxt chứa các node không nằm trong reachable tức các node dùng để tìm các node mới 
-        if not frontier: #không còn node mới thì phá vòng lặp 
+            nxt |= {str(nb) for _, nb, _ in graph.out_edges(node, data=True) if str(nb) not in reachable}
+            nxt |= {str(nb) for nb, _, _ in graph.in_edges(node, data=True) if str(nb) not in reachable}
+        reachable |= nxt
+        frontier = nxt
+        if not frontier:
             break
     
-    extra_ids = reachable - seed_ids # mục đích để lọc ra các docs mới không phải docs_seed ban đầu, lọc theo id 
-    extra_docs = dense_search(store, query, k=k*2,
-                              metadata_filter={"doc_id": {"$in": list(extra_ids)}}) if extra_ids else []
+    extra_ids = list(reachable - seed_ids)
+    extra_docs = []
     
-    # loại bỏ trùng lặp 
-    seen, deduped = set(), [] #seen kiểm tra đã gặp chưa, deduped lưu kết quả 
-    for doc in list(seed_docs) + extra_docs:
-        key=f"{doc.metadata.get('doc_id', '')}_{doc.metadata.get('chunk_index',0)}"
-        if key not in seen:
-            seen.add(key)
-            deduped.append(doc)
-    return deduped[:k] #lấy k phần tử đầu, không tính phần tử có index = k
+    # Giới hạn lấy tối đa 30 ID loang gần nhất để kiểm soát nhiễu, tránh chèn ép vị trí
+    if len(extra_ids) > 30:
+        extra_ids = extra_ids[:30]
 
+    # 3. Chia nhỏ danh sách IDs thành từng Batch tối đa 200 phần tử phòng vệ lỗi SQLite
+    if extra_ids:
+        BATCH_SIZE = 200
+        for i in range(0, len(extra_ids), BATCH_SIZE):
+            batch_ids = extra_ids[i:i + BATCH_SIZE]
+            try:
+                # Tìm các đoạn văn bản thuộc dải ID quan hệ
+                batch_docs = dense_search(
+                    store, 
+                    query, 
+                    k=5,  # Lấy lượng vừa đủ để không làm loãng khối kết quả
+                    metadata_filter={"doc_id": {"$in": batch_ids}}
+                )
+                extra_docs.extend(batch_docs)
+            except Exception:
+                continue
+    
+    merged: list[Document] = []
+    seen_văn_bản = set()
+
+    # 4. ĐẢO NGƯỢC CHIẾN LƯỢC XẾP HẠNG: Đề cao tài liệu hạt nhân cốt lõi (Seed Docs) lên trước
+    for doc in seed_docs:
+        doc_id = str((doc.metadata or {}).get("doc_id", ""))
+        if doc_id and doc_id not in seen_văn_bản:
+            seen_văn_bản.add(doc_id)
+            merged.append(doc)
+
+    # Sau đó mới chèn bổ sung các tài liệu bắc cầu quan hệ (Extra Docs) vào các vị trí trống còn lại
+    for doc in extra_docs:
+        doc_id = str((doc.metadata or {}).get("doc_id", ""))
+        if doc_id and doc_id not in seen_văn_bản:
+            seen_văn_bản.add(doc_id)
+            merged.append(doc)
+            
+    return merged[:k]

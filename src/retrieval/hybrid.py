@@ -1,16 +1,6 @@
 from langchain_core.documents import Document
 from src.retrieval.dense import dense_search
 
-
-def _doc_key(doc: Document) -> str:
-    """
-    Tạo key để chống trùng document.
-    """
-    metadata = doc.metadata or {}
-
-    return f"{metadata.get('doc_id', '')}_{metadata.get('chunk_index', 0)}"
-
-
 def hybrid_search(
     store,
     bm25,
@@ -19,36 +9,29 @@ def hybrid_search(
     dense_k: int | None = None,
     bm25_k: int | None = None,
 ) -> list[Document]:
-    """
-    Hybrid search = dense search + BM25 search.
-
-    Dense search mạnh về ngữ nghĩa.
-    BM25 mạnh về keyword, số điều, tên văn bản, năm ban hành.
-    """
-    dense_k = dense_k or k
-    bm25_k = bm25_k or k
-
-    dense_docs = dense_search(store, query, k=dense_k)
-
-    bm25.k = bm25_k
+    # Thu hồi diện rộng ở tầng chunk (k * 10) để chống hiện tượng "Cạnh tranh Chunk"
+    POOL_K = k * 10
+    
+    dense_docs = dense_search(store, query, k=POOL_K)
+    
+    bm25.k = POOL_K
     bm25_docs = bm25.invoke(query)
 
     merged: list[Document] = []
-    seen = set()
+    seen_văn_bản = set()
 
-    # Ưu tiên xen kẽ dense và bm25
-    for docs in zip(dense_docs, bm25_docs):
-        for doc in docs:
-            key = _doc_key(doc)
-            if key not in seen:
-                seen.add(key)
-                merged.append(doc)
+    # Ưu tiên gom các tài liệu từ BM25 trước (đặc biệt hiệu quả cho nhóm tên văn bản cổ/sắc lệnh)
+    for doc in bm25_docs:
+        doc_id = str((doc.metadata or {}).get("doc_id", ""))
+        if doc_id and doc_id not in seen_văn_bản:
+            seen_văn_bản.add(doc_id)
+            merged.append(doc)
 
-    # Nếu một bên dài hơn bên kia
-    for doc in dense_docs + bm25_docs:
-        key = _doc_key(doc)
-        if key not in seen:
-            seen.add(key)
+    # Bổ sung các tài liệu từ Dense Search nếu chưa xuất hiện
+    for doc in dense_docs:
+        doc_id = str((doc.metadata or {}).get("doc_id", ""))
+        if doc_id and doc_id not in seen_văn_bản:
+            seen_văn_bản.add(doc_id)
             merged.append(doc)
 
     return merged[:k]
