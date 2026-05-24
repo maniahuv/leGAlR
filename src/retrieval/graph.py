@@ -16,15 +16,14 @@ def build_graph(relationships: list[dict]) -> nx.DiGraph:
             graph.add_edge(src, dst, rel_type=rel_type)
     return graph
 
-def graph_search(store, graph: nx.DiGraph, query: str, k: int = 5, initial_k: int = 3, max_hops: int = 2):
+def graph_search(store, graph: nx.DiGraph, query: str, k: int = 5, initial_k: int = 5, max_hops: int = 2):
     """
     Thuật toán tìm kiếm nâng cao dẫn đường bằng Đồ thị quan hệ hiệu lực văn bản (Graph-guided RAG).
     """
-    # Nới rộng không gian tìm kiếm thô để ngăn chặn hiện tượng nghẽn chunk
-    POOL_K = k * 5
+    # Nới rộng không gian tìm kiếm thô để ngăn chặn hiện tượng nghẽn hoặc thiếu hụt chunk hạt nhân
+    POOL_K = k * 6
     
     # 1. Gọi trực tiếp mô hình hybrid_search để lấy tài liệu hạt nhân chuẩn xác (Seed Docs)
-    # Để tránh bị ép chặt unique quá sớm, ta nạp đối tượng chỉ mục trực tiếp
     from src.indexing.bm25_index import load_bm25_index
     bm25 = load_bm25_index()
     
@@ -33,7 +32,7 @@ def graph_search(store, graph: nx.DiGraph, query: str, k: int = 5, initial_k: in
 
     reachable, frontier = set(seed_ids), set(seed_ids)
     
-    # 2. Thuật toán loang đồ thị tìm các văn bản sửa đổi, thay thế hoặc dẫn chiếu liên quan
+    # 2. Thuật toán loang đồ thị tìm các văn bản sửa đổi, thay thế hoặc dẫn chiếu liên quan (BFS)
     for _ in range(max_hops):
         nxt = set()
         for node in frontier:
@@ -49,21 +48,22 @@ def graph_search(store, graph: nx.DiGraph, query: str, k: int = 5, initial_k: in
     extra_ids = list(reachable - seed_ids)
     extra_docs = []
     
-    # Giới hạn lấy tối đa 30 ID loang gần nhất để kiểm soát nhiễu, tránh chèn ép vị trí
-    if len(extra_ids) > 30:
-        extra_ids = extra_ids[:30]
+    # Giới hạn lấy tối đa 40 ID loang gần nhất để kiểm soát nhiễu, tránh chèn ép vị trí ưu tiên
+    if len(extra_ids) > 40:
+        extra_ids = extra_ids[:40]
 
-    # 3. Chia nhỏ danh sách IDs thành từng Batch tối đa 200 phần tử phòng vệ lỗi SQLite
+    # 3. Chia nhỏ danh sách IDs thành từng Batch tối đa 200 phần tử phòng vệ lỗi SQLite / ChromaDB Variables Limit
     if extra_ids:
         BATCH_SIZE = 200
         for i in range(0, len(extra_ids), BATCH_SIZE):
             batch_ids = extra_ids[i:i + BATCH_SIZE]
             try:
-                # Tìm các đoạn văn bản thuộc dải ID quan hệ
+                # Tìm các đoạn văn bản thuộc dải ID quan hệ mở rộng
+                # Tăng lượng k từ 5 lên 10 giúp lấy trọn vẹn ngữ cảnh đa chiều của các văn bản sửa đổi bổ sung
                 batch_docs = dense_search(
                     store, 
                     query, 
-                    k=5,  # Lấy lượng vừa đủ để không làm loãng khối kết quả
+                    k=10,  
                     metadata_filter={"doc_id": {"$in": batch_ids}}
                 )
                 extra_docs.extend(batch_docs)
@@ -71,20 +71,21 @@ def graph_search(store, graph: nx.DiGraph, query: str, k: int = 5, initial_k: in
                 continue
     
     merged: list[Document] = []
-    seen_văn_bản = set()
+    seen_chunks = set()
 
-    # 4. ĐẢO NGƯỢC CHIẾN LƯỢC XẾP HẠNG: Đề cao tài liệu hạt nhân cốt lõi (Seed Docs) lên trước
+    # 4. CHIẾN LƯỢC XẾP HẠNG PHỐI HỢP: Đề cao tài liệu hạt nhân cốt lõi (Seed Docs) lên trước
     for doc in seed_docs:
-        doc_id = str((doc.metadata or {}).get("doc_id", ""))
-        if doc_id and doc_id not in seen_văn_bản:
-            seen_văn_bản.add(doc_id)
+        # Định danh độc nhất dựa trên sự kết hợp giữa doc_id và chunk_index để tránh trùng lặp phân đoạn
+        chunk_uid = f"{doc.metadata.get('doc_id')}_{doc.metadata.get('chunk_index', 0)}"
+        if chunk_uid not in seen_chunks:
+            seen_chunks.add(chunk_uid)
             merged.append(doc)
 
     # Sau đó mới chèn bổ sung các tài liệu bắc cầu quan hệ (Extra Docs) vào các vị trí trống còn lại
     for doc in extra_docs:
-        doc_id = str((doc.metadata or {}).get("doc_id", ""))
-        if doc_id and doc_id not in seen_văn_bản:
-            seen_văn_bản.add(doc_id)
+        chunk_uid = f"{doc.metadata.get('doc_id')}_{doc.metadata.get('chunk_index', 0)}"
+        if chunk_uid not in seen_chunks:
+            seen_chunks.add(chunk_uid)
             merged.append(doc)
             
     return merged[:k]
