@@ -9,7 +9,6 @@ from langchain_core.tools import tool
 from langchain_core.documents import Document
 
 from configs.setting import config
-
 from src.indexing.chroma_store import get_store
 from src.indexing.bm25_index import load_bm25_index
 
@@ -21,16 +20,25 @@ from src.retrieval.graph import build_graph, graph_search
 
 @lru_cache(maxsize=1)
 def _get_store():
+    """
+    Nạp và cache Chroma vector store.
+    """
     return get_store()
 
 
 @lru_cache(maxsize=1)
 def _get_bm25():
+    """
+    Nạp và cache chỉ mục từ khóa BM25.
+    """
     return load_bm25_index()
 
 
 @lru_cache(maxsize=1)
 def _get_graph():
+    """
+    Nạp, chuẩn hóa dữ liệu quan hệ văn bản pháp luật và cache đồ thị mạng lưới.
+    """
     path = Path("data/graph/relationships.pkl")
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -38,19 +46,25 @@ def _get_graph():
         with open(path, "rb") as f:
             relationships = pickle.load(f)
     else:
-        print("⏳ Đang tải tập dữ liệu quan hệ văn bản gốc...")
+        print("⏳ Đang tải tập dữ liệu quan hệ văn bản gốc từ HuggingFace...")
         raw_relationships = load_dataset(
             "th1nhng0/vietnamese-legal-documents",
             name="relationships",
             split="data",
         )
-
-        # 🎯 BƯỚC TỐI ƯU: Đọc chỉ mục BM25 hoặc danh sách ID đã được lọc ở bước ingest để gom tập ID hợp lệ
-        # Nếu không có sẵn danh sách ID, bạn có thể lọc nhanh theo dải ID xuất hiện trong hệ thống Luật HNGĐ
-        # Ở đây ta giữ lại các quan hệ mà id hoặc other_doc_id xuất hiện trong các câu hỏi test của bạn
-        # Hoặc một phương án đơn giản hơn là giới hạn số lượng cạnh loang tối đa bằng cách chia nhỏ batch ở Giải pháp 1.
         
-        relationships = list(raw_relationships)
+        # 🎯 BƯỚC CHUẨN HÓA CỐT LÕI: Ép kiểu toàn bộ ID thành chuỗi (str) và loại bỏ khoảng trắng
+        relationships = []
+        for row in raw_relationships:
+            src = str(row.get("doc_id", "")).strip()
+            dst = str(row.get("other_doc_id", "")).strip()
+            rel_type = str(row.get("relationship", "")).strip()
+            if src and dst:
+                relationships.append({
+                    "doc_id": src,
+                    "other_doc_id": dst,
+                    "relationship": rel_type
+                })
 
         with open(path, "wb") as f:
             pickle.dump(relationships, f)
@@ -59,6 +73,9 @@ def _get_graph():
 
 
 def _doc_to_dict(doc: Document) -> dict:
+    """
+    Hỗ trợ chuyển đổi cấu trúc đối tượng Document sang Dictionary thuần túy.
+    """
     return {
         "content": doc.page_content,
         "metadata": doc.metadata or {},
@@ -79,7 +96,6 @@ def dense_search_tool(
         query,
         k=k,
     )
-
     return [_doc_to_dict(d) for d in docs]
 
 
@@ -93,13 +109,15 @@ def hybrid_search_tool(
     Use this for exact legal keywords, article numbers, document numbers,
     dates, and legal effectiveness queries.
     """
+    # Lấy pool ứng viên rộng hơn (k * 4) để tầng Rerank làm việc hiệu quả
     docs = hybrid_search(
         _get_store(),
         _get_bm25(),
         query,
-        k=k * 2,
+        k=k * 4,
     )
 
+    # Tiến hành xếp hạng lại bằng cơ chế Bi-gram Jaccard Similarity đã tối ưu
     docs = rerank(query, docs, k=k)
 
     return [_doc_to_dict(d) for d in docs]
@@ -109,7 +127,6 @@ def hybrid_search_tool(
 def graph_traverse_tool(
     query: str,
     k: int = config.retrieval.k,
-    initial_k: int = 3,
     max_hops: int = getattr(config.retrieval, "graph_max_hops", 2),
 ) -> list[dict]:
     """
@@ -119,19 +136,18 @@ def graph_traverse_tool(
     amendments, replacements, abolitions, references, or legal hierarchy.
     """
     try:
+        graph_obj = _get_graph()
         docs = graph_search(
             _get_store(),
-            _get_graph(),
+            graph_obj,
             query,
             k=k,
-            initial_k=initial_k,
             max_hops=max_hops,
         )
-
         return [_doc_to_dict(d) for d in docs]
 
     except Exception as e:
-        return [{"error": str(e)}]
+        return [{"error": f"Lỗi thực thi đồ thị tại tool: {str(e)}"}]
 
 
 @tool
@@ -148,7 +164,7 @@ def generate_answer_tool(
         f"Câu hỏi: {query}\n\n"
         f"Ngữ cảnh:\n{context}\n\n"
         "Yêu cầu:\n"
-        "- Trả lời rõ ràng, dễ hiểu.\n"
-        "- Nếu văn bản đã hết hiệu lực, phải nói rõ.\n"
-        "- Không bịa thông tin ngoài ngữ cảnh."
+        "- Trả lời rõ ràng, dễ hiểu, bám sát căn cứ pháp lý trong ngữ cảnh.\n"
+        "- Nếu văn bản đã hết hiệu lực hoặc bị thay thế, phải nêu rõ ràng cho người dùng.\n"
+        "- Tuyệt đối không tự bịa đặt hay suy diễn thông tin nằm ngoài ngữ cảnh cung cấp."
     )
