@@ -1,0 +1,27 @@
+chunking:
+  chunk_size: 1000
+  chunk_overlap: 200
+
+retrieval:
+  k: 5
+  graph_max_hops: 2 #dùng với graph rag/ nhảy tối đa 2 bước
+  rrf_k: 60 #càng lớn càng giảm bias
+
+generation:
+  temperature: 0.0 #model trả lời chính xác
+  max_tokens: 2048 #giới hạn độ dài câu trả lời
+
+embedding:
+  model_name: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  device: "cpu"
+
+vector_store:
+  collection_name: "legal_docs"
+  persist_directory: "data/chroma"
+
+bm25: 
+  persist_path: "data/bm25/bm25.pkl"
+
+llm:
+  model: "gemini-3.5-flash"
+  temperature: 0.2
