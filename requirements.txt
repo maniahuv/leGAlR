@@ -1,0 +1,33 @@
+# Core
+python-dotenv>=1.0.1
+pyyaml>=6.0.1
+tqdm>=4.66.0
+beautifulsoup4>=4.12.0
+networkx>=3.2
+numpy>=1.26,<3
+
+# Data
+pandas>=2.0.0
+datasets>=2.19.0
+
+# LangChain / RAG
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langchain-text-splitters>=0.2.0
+langchain-chroma>=0.1.0
+langchain-huggingface>=0.0.3
+langchain-google-genai>=1.0.0
+langgraph>=0.2.0
+chromadb>=0.5.0
+rank-bm25>=0.2.2
+underthesea>=6.8.0
+sentence-transformers>=2.7.0
+
+# API
+fastapi>=0.115.0
+uvicorn>=0.30.0
+pydantic>=2.7.0
+
+# Local PDF ingestion
+pypdf>=4.2.0
