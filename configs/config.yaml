@@ -1,0 +1,70 @@
+# Cấu hình mặc định cho Legal RAG.
+# Ưu tiên: đúng luật hơn, phản hồi nhanh trên CPU, có thể bật CrossEncoder khi cần accuracy mode.
+
+dataset:
+  name: "th1nhng0/vietnamese-legal-documents"
+  content_config: "content"
+  metadata_config: "metadata"
+  relationships_config: "relationships"
+  split: "data"
+  domain: "family_law"
+  content_filter_chars: 6000
+  include_graph_neighbors: true
+  graph_expansion_hops: 1
+  graph_expansion_max_docs: 800
+  max_docs: null       # đặt số nguyên nếu muốn giới hạn số văn bản ingest
+  sample_size: null    # chỉ dùng để debug nhanh
+
+chunking:
+  strategy: "legal_recursive"   # legal_recursive | recursive
+  chunk_size: 900
+  chunk_overlap: 120
+  keep_legal_structure: true
+
+retrieval:
+  k: 5
+  # Pool nhỏ hơn bản cũ để giảm latency; reranker pháp lý bù lại bằng rule score.
+  pool_multiplier: 6
+  min_pool_size: 30
+  accurate_pool_multiplier: 8
+  accurate_min_pool_size: 40
+  rrf_k: 50
+  dense_weight: 0.9
+  bm25_weight: 1.35
+  graph_weight: 1.15
+  fusion_metadata_weight: 0.18
+  graph_max_hops: 1
+  graph_seed_doc_limit: 8
+  graph_expansion_limit: 40
+  graph_docid_filter_limit: 40
+  use_conditional_rerank: false
+  use_cross_encoder: false
+  cross_encoder_model: "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
+  cross_encoder_max_chars: 3000
+  context_chars_per_doc: 2300
+  log_retrieval: false
+
+generation:
+  temperature: 0.0
+  max_tokens: 2048
+
+embedding:
+  # Nhẹ, chạy CPU được. Nếu máy khỏe, nên thử BAAI/bge-m3 hoặc intfloat/multilingual-e5-base.
+  model_name: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  device: "cpu"
+
+vector_store:
+  collection_name: "legal_docs"
+  persist_directory: "data/chroma"
+  reset_on_ingest: true
+
+bm25:
+  persist_path: "data/bm25/bm25.pkl"
+
+llm:
+  # Có thể override bằng biến môi trường LLM_MODEL.
+  model: "gemini-1.5-flash"
+  temperature: 0.2
+
+api:
+  default_k: 5
