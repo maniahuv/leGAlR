@@ -1,0 +1,103 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# =========================
+# Virtual environment
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Project data / indexes
+# =========================
+data/
+*/data/
+
+# Chroma vector database
+data/chroma/
+*/data/chroma/
+
+# BM25 index
+data/bm25/
+*/data/bm25/
+*.pkl
+
+# Graph cache
+data/graph/
+*/data/graph/
+
+# Evaluation outputs
+data/evaluation/*.csv
+data/evaluation/*.xlsx
+data/evaluation/*.jsonl
+
+# Keep evaluation test cases if you want to commit them
+!data/evaluation/legal_test_cases.json
+!*/data/evaluation/legal_test_cases.json
+
+# =========================
+# Model / cache files
+# =========================
+.cache/
+huggingface/
+.huggingface/
+models/
+checkpoints/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Docker
+# =========================
+*.pid
+*.seed
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Temporary files
+# =========================
+tmp/
+temp/
+*.tmp
