@@ -1,0 +1,44 @@
+[
+  {
+    "id": "hn_001",
+    "query": "Con dưới 36 tháng tuổi khi cha mẹ ly hôn thì thường được giao cho ai trực tiếp nuôi?",
+    "relevant_ids": ["52_2014_QH13"],
+    "relevant_articles": ["81"],
+    "scenario": "exact-keyword-fact"
+  },
+  {
+    "id": "hn_002",
+    "query": "Sau khi ly hôn, cha hoặc mẹ không trực tiếp nuôi con có quyền và nghĩa vụ gì?",
+    "relevant_ids": ["52_2014_QH13"],
+    "relevant_articles": ["82"],
+    "scenario": "single-hop-semantic"
+  },
+  {
+    "id": "hn_003",
+    "query": "Người trực tiếp nuôi con sau ly hôn có quyền cản trở người kia thăm nom con không?",
+    "relevant_ids": ["52_2014_QH13"],
+    "relevant_articles": ["83"],
+    "scenario": "single-hop-semantic"
+  },
+  {
+    "id": "hn_004",
+    "query": "Có thể yêu cầu thay đổi người trực tiếp nuôi con sau ly hôn trong trường hợp nào?",
+    "relevant_ids": ["52_2014_QH13"],
+    "relevant_articles": ["84"],
+    "scenario": "single-hop-semantic"
+  },
+  {
+    "id": "hn_005",
+    "query": "Vợ chồng có quyền thỏa thuận chia tài sản chung trong thời kỳ hôn nhân không?",
+    "relevant_ids": ["52_2014_QH13"],
+    "relevant_articles": ["38"],
+    "scenario": "exact-keyword-fact"
+  },
+  {
+    "id": "hn_006",
+    "query": "Văn bản nào quy định chi tiết thi hành Luật Hôn nhân và gia đình 2014?",
+    "relevant_ids": ["126_2014_ND_CP"],
+    "relevant_articles": [],
+    "scenario": "multi-hop-graph"
+  }
+]
