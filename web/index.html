@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Legal RAG Chat - Hôn nhân & Gia đình</title>
+
+  <!-- Tăng version để tránh trình duyệt cache CSS cũ -->
+  <link rel="stylesheet" href="/web/styles.css?v=3" />
+</head>
+
+<body>
+  <div class="app-shell">
+    <aside class="sidebar left-panel">
+      <div class="brand">
+        <div class="brand-icon">⚖</div>
+        <div>
+          <h1>Legal RAG</h1>
+          <p>Hôn nhân & Gia đình</p>
+        </div>
+      </div>
+
+      <button id="newChatBtn" class="primary-btn full">
+        + Cuộc trò chuyện mới
+      </button>
+
+      <div class="section-title">Lịch sử hội thoại</div>
+      <div id="conversationList" class="conversation-list"></div>
+
+      <div class="settings-card">
+        <label>
+          Strategy
+          <select id="strategySelect">
+            <option value="auto" selected>auto</option>
+            <option value="dense">dense</option>
+            <option value="hybrid">hybrid</option>
+            <option value="hybrid_rerank">hybrid_rerank</option>
+            <option value="graph">graph</option>
+          </select>
+        </label>
+
+        <label>
+          Top K
+          <input id="topKInput" type="number" min="1" max="10" value="5" />
+        </label>
+
+        <label class="checkbox-row">
+          <input id="generateToggle" type="checkbox" checked />
+          <span>Gọi LLM để sinh câu trả lời</span>
+        </label>
+      </div>
+    </aside>
+
+    <main class="chat-panel">
+      <header class="chat-header">
+        <div>
+          <h2 id="chatTitle">Cuộc trò chuyện mới</h2>
+          <p>
+            Chọn/bôi đậm một từ hoặc cụm trong khung chat để tra cứu văn bản
+            liên quan ở panel bên phải.
+          </p>
+        </div>
+
+        <div id="statusBadge" class="status-badge">Sẵn sàng</div>
+      </header>
+
+      <!-- Vùng tin nhắn chính: bắt buộc có id="chatMessages" để JS và CSS xử lý scroll -->
+      <section id="chatMessages" class="messages">
+        <div class="empty-state">
+          <h3>Hỏi đáp pháp luật Hôn nhân & Gia đình</h3>
+          <p>
+            Ví dụ: “Điều kiện công nhận thuận tình ly hôn là gì?” hoặc
+            “Con dưới 36 tháng tuổi khi ly hôn giao cho ai nuôi?”
+          </p>
+        </div>
+      </section>
+
+      <form id="chatForm" class="composer">
+        <textarea
+          id="questionInput"
+          rows="2"
+          placeholder="Nhập câu hỏi pháp luật..."
+        ></textarea>
+
+        <button id="sendBtn" type="submit">Gửi</button>
+      </form>
+    </main>
+
+    <aside class="sidebar right-panel">
+      <div class="panel-header">
+        <h2>Tra cứu nhanh</h2>
+        <p>Bôi đậm/chọn keyword trong chat hoặc nhập thủ công.</p>
+      </div>
+
+      <div class="lookup-box">
+        <input
+          id="keywordInput"
+          type="text"
+          placeholder="Từ khóa: Điều 55, thuận tình ly hôn..."
+        />
+
+        <button id="lookupBtn" class="secondary-btn">Tra cứu</button>
+      </div>
+
+      <div id="selectionHint" class="selection-hint">
+        Chưa chọn từ khóa.
+      </div>
+
+      <div class="section-title">Nguồn truy xuất gần nhất</div>
+      <div id="latestSources" class="source-list compact"></div>
+
+      <div class="section-title">Kết quả tra cứu keyword</div>
+      <div id="lookupResults" class="source-list"></div>
+    </aside>
+  </div>
+
+  <!-- Tăng version để tránh trình duyệt cache JS cũ -->
+  <script src="/web/app.js?v=3"></script>
+</body>
+</html>

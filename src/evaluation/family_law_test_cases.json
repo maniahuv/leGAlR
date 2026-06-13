@@ -1,0 +1,229 @@
+[
+  {
+    "id": "hn_001",
+    "query": "Con dưới 36 tháng tuổi khi cha mẹ ly hôn thì thường được giao cho ai trực tiếp nuôi?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "81"
+    ],
+    "scenario": "exact-keyword-fact"
+  },
+  {
+    "id": "hn_002",
+    "query": "Sau khi ly hôn, cha hoặc mẹ không trực tiếp nuôi con có quyền và nghĩa vụ gì?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "82"
+    ],
+    "scenario": "single-hop-semantic"
+  },
+  {
+    "id": "hn_003",
+    "query": "Người trực tiếp nuôi con sau ly hôn có quyền cản trở người kia thăm nom con không?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "83"
+    ],
+    "scenario": "single-hop-semantic"
+  },
+  {
+    "id": "hn_004",
+    "query": "Có thể yêu cầu thay đổi người trực tiếp nuôi con sau ly hôn trong trường hợp nào?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "84"
+    ],
+    "scenario": "single-hop-semantic"
+  },
+  {
+    "id": "hn_005",
+    "query": "Vợ chồng có quyền thỏa thuận chia tài sản chung trong thời kỳ hôn nhân không?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "38"
+    ],
+    "scenario": "exact-keyword-fact"
+  },
+  {
+    "id": "hn_006",
+    "query": "Văn bản nào quy định chi tiết thi hành Luật Hôn nhân và gia đình 2014?",
+    "relevant_ids": [
+      "126_2014_ND_CP"
+    ],
+    "relevant_articles": [],
+    "scenario": "multi-hop-graph"
+  },
+  {
+    "id": "hn_prohibited_acts_001",
+    "query": "Hành vi nào bị cấm thực hiện trong luật hôn nhân gia đình?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "5"
+    ],
+    "relevant_pairs": [
+      [
+        "52_2014_QH13",
+        "5"
+      ]
+    ],
+    "required_pairs": [
+      [
+        "52_2014_QH13",
+        "5"
+      ]
+    ],
+    "scenario": "exact-keyword-fact"
+  },
+  {
+    "id": "hn_divorce_grounds_001",
+    "query": "Căn cứ nào để Tòa án xem xét giải quyết cho ly hôn?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "55",
+      "56"
+    ],
+    "relevant_pairs": [
+      [
+        "52_2014_QH13",
+        "55"
+      ],
+      [
+        "52_2014_QH13",
+        "56"
+      ]
+    ],
+    "required_pairs": [
+      [
+        "52_2014_QH13",
+        "55"
+      ],
+      [
+        "52_2014_QH13",
+        "56"
+      ]
+    ],
+    "scenario": "multi-hop-legal-reasoning"
+  },
+  {
+    "id": "hn_lottery_property_001",
+    "query": "Tiền trúng số của vợ hoặc chồng trong thời kỳ hôn nhân là tài sản chung hay tài sản riêng, khi ly hôn chia như thế nào?",
+    "relevant_ids": [
+      "126_2014_ND_CP",
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "9",
+      "33",
+      "59"
+    ],
+    "relevant_pairs": [
+      [
+        "126_2014_ND_CP",
+        "9"
+      ],
+      [
+        "52_2014_QH13",
+        "33"
+      ],
+      [
+        "52_2014_QH13",
+        "59"
+      ]
+    ],
+    "required_pairs": [
+      [
+        "126_2014_ND_CP",
+        "9"
+      ],
+      [
+        "52_2014_QH13",
+        "33"
+      ]
+    ],
+    "scenario": "multi-source-legal-reasoning"
+  },
+  {
+    "id": "hn_adoptive_sibling_marriage_001",
+    "query": "Con ruột và con nuôi trong cùng gia đình có được kết hôn với nhau không?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "5",
+      "8",
+      "3"
+    ],
+    "relevant_pairs": [
+      [
+        "52_2014_QH13",
+        "5"
+      ],
+      [
+        "52_2014_QH13",
+        "8"
+      ],
+      [
+        "52_2014_QH13",
+        "3"
+      ]
+    ],
+    "required_pairs": [
+      [
+        "52_2014_QH13",
+        "5"
+      ],
+      [
+        "52_2014_QH13",
+        "8"
+      ]
+    ],
+    "scenario": "misleading-keyword"
+  },
+  {
+    "id": "hn_parent_child_duties_001",
+    "query": "Con cái có bắt buộc phải chăm sóc, nuôi dưỡng cha mẹ không?",
+    "relevant_ids": [
+      "52_2014_QH13"
+    ],
+    "relevant_articles": [
+      "70",
+      "71",
+      "111"
+    ],
+    "relevant_pairs": [
+      [
+        "52_2014_QH13",
+        "70"
+      ],
+      [
+        "52_2014_QH13",
+        "71"
+      ],
+      [
+        "52_2014_QH13",
+        "111"
+      ]
+    ],
+    "required_pairs": [
+      [
+        "52_2014_QH13",
+        "71"
+      ]
+    ],
+    "scenario": "role-confusion"
+  }
+]
