@@ -9,6 +9,7 @@ numpy>=1.26,<3
 # Data
 pandas>=2.0.0
 datasets>=2.19.0
+ragas>=0.1.0
 
 # LangChain / RAG
 langchain>=0.2.0
